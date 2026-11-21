@@ -62,7 +62,7 @@ button { cursor: pointer; }
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--border-dark);
-  z-index: 40;
+  z-index: 85;
   transition: transform 0.22s ease;
 }
 
@@ -912,7 +912,7 @@ button { cursor: pointer; }
   position: fixed;
   inset: 0;
   background: rgba(8,21,38,0.48);
-  z-index: 80;
+  z-index: 70;
   display: none;
 }
 .drawer-backdrop.open { display: block; }
@@ -1355,6 +1355,133 @@ button { cursor: pointer; }
   }
 }
 
+
+/* QUICK PREVIEW BOTTOM SHEET / MODAL & PLAYTEST UPGRADES */
+.back-nav-btn {
+  display: none;
+  align-items: center;
+  gap: 5px;
+  height: 36px;
+  padding: 0 11px;
+  border-radius: 8px;
+  border: 1px solid var(--red);
+  background: rgba(230,36,41,0.08);
+  color: var(--red-dark);
+  font-size: 13px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+.back-nav-btn.visible { display: inline-flex; }
+.back-nav-btn:hover { background: var(--red); color: #fff; }
+
+.sheet-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(8,21,38,0.58);
+  z-index: 100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.sheet-modal-backdrop.open { display: flex; }
+
+.sheet-modal {
+  background: #fff;
+  color: var(--ink);
+  width: 100%;
+  max-width: 560px;
+  max-height: 86vh;
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 18px 46px rgba(8,21,38,0.34);
+  border: 1px solid var(--border-light);
+}
+.sheet-modal-head {
+  background: var(--navy);
+  color: #fff;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 2px solid var(--red);
+}
+.sheet-modal-body {
+  padding: 16px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.sheet-modal-foot {
+  padding: 10px 16px;
+  background: var(--paper);
+  border-top: 1px solid var(--border-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sticky-vitals-mobile {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .sheet-modal-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .sheet-modal {
+    max-width: 100%;
+    max-height: 82dvh;
+    border-radius: 18px 18px 0 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .sticky-vitals-mobile {
+    display: flex;
+    position: sticky;
+    top: 0;
+    z-index: 15;
+    background: var(--navy);
+    color: #fff;
+    padding: 8px 10px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    box-shadow: 0 4px 12px rgba(8,21,38,0.22);
+    font-size: 12px;
+    font-weight: 800;
+  }
+  .back-nav-btn span { display: none; }
+}
+
+
+/* SIDEBAR PRIORITY & LOCKED POWER STYLING */
+@media (max-width: 960px) {
+  .sidebar.open { z-index: 95 !important; }
+}
+.drawer.open { z-index: 96 !important; }
+.sheet-modal-backdrop { z-index: 105 !important; }
+.toast { z-index: 130 !important; }
+.btn-sm:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: #e9e6de;
+  color: #6b7785;
+  border-color: #d6d2c8;
+}
+.lock-reason {
+  font-size: 11px;
+  color: var(--red-dark);
+  font-weight: 700;
+  margin-top: 2px;
+}
+
 </style>
 </head>
 <body>
@@ -1379,14 +1506,16 @@ button { cursor: pointer; }
   <div class="main-wrap">
     <header class="topbar">
       <button class="menu-btn" id="menuBtn" aria-label="Меню">☰</button>
+      <button class="back-nav-btn" id="backNavBtn" onclick="goBackNav()" title="Вернуться назад">← <span>Назад</span></button>
       <div class="global-search-wrap">
         <input type="text" id="globalSearch" class="global-search-input" placeholder="Быстрый поиск: персонаж, способность, черта, тег, термин..." autocomplete="off">
         <button class="global-search-clear" id="globalSearchClear" aria-label="Очистить">✕</button>
         <div class="global-search-dropdown" id="globalSearchDropdown"></div>
       </div>
       <div class="topbar-actions">
+        <button class="top-btn" onclick="openAccountModal()" title="Аккаунт и резервная копия">👤 <span>Профиль</span></button>
         <button class="top-btn" onclick="navigate('dice')" title="Кубики D616">🎲 <span>D616</span></button>
-        <button class="top-btn accent" id="bookmarksBtn">★ <span>Закладки</span> <span class="badge-pill" id="bmCount">0</span></button>
+        <button class="top-btn accent" id="bookmarksBtn">★ <span>Избранное</span> <span class="badge-pill" id="bmCount">0</span></button>
       </div>
     </header>
     <main class="content-area" id="contentArea"></main>
@@ -1412,6 +1541,19 @@ button { cursor: pointer; }
   </div>
   <div class="drawer-body" id="bmList"></div>
 </aside>
+<!-- QUICK PREVIEW BOTTOM SHEET / MODAL -->
+<div class="sheet-modal-backdrop" id="previewBackdrop" onclick="if(event.target===this)closeQuickPreview()">
+  <div class="sheet-modal" role="dialog" aria-modal="true">
+    <div class="sheet-modal-head">
+      <div id="previewTitle" style="font-weight:800;font-size:15px;">Подробности</div>
+      <button class="btn-sm" onclick="closeQuickPreview()">✕ Закрыть</button>
+    </div>
+    <div class="sheet-modal-body" id="previewBody"></div>
+    <div class="sheet-modal-foot" id="previewFoot"></div>
+  </div>
+</div>
+<input type="file" id="importJsonInput" accept=".json,application/json" style="display:none;" onchange="handleImportJsonFile(event)">
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1426,7 +1568,7 @@ const STATE = {
   mobileDetailOpen: false,
   filters: {
     characters: { q: '', rank: 'all', origin: '' },
-    powers: { q: '', group: 'all', action: 'all' },
+    powers: { q: '', group: 'all', action: 'all', rank: 'all', sort: 'name' },
     origins: { q: '' },
     occupations: { q: '' },
     traits: { q: '', restricted: 'all' },
@@ -1571,7 +1713,45 @@ function renderSidebar() {
   `).join('');
 }
 
-function navigate(route, itemIndex) {
+const NAV_HISTORY = [];
+function updateBackBtn() {
+  const btn = document.getElementById('backNavBtn');
+  if (btn) btn.classList.toggle('visible', NAV_HISTORY.length > 0);
+}
+function pushNavSnapshot() {
+  NAV_HISTORY.push({
+    route: STATE.route,
+    selectedIdx: STATE.selectedIdx,
+    mobileDetailOpen: STATE.mobileDetailOpen,
+    builderStep: STATE.builder ? STATE.builder.step : 'start',
+    sheetTab: STATE.builder ? STATE.builder.sheetTab : 'actions'
+  });
+  if (NAV_HISTORY.length > 30) NAV_HISTORY.shift();
+  updateBackBtn();
+}
+function goBackNav() {
+  if (!NAV_HISTORY.length) return;
+  const prev = NAV_HISTORY.pop();
+  STATE.route = prev.route;
+  STATE.selectedIdx = prev.selectedIdx;
+  STATE.mobileDetailOpen = prev.mobileDetailOpen;
+  if (STATE.builder && prev.route === 'builder') {
+    STATE.builder.step = prev.builderStep || 'sheet';
+    STATE.builder.sheetTab = prev.sheetTab || 'actions';
+  }
+  closeQuickPreview();
+  if (typeof closeQuickPreview === 'function') closeQuickPreview();
+  if (typeof closeBookmarks === 'function') closeBookmarks();
+  closeMobileSidebar();
+  updateBackBtn();
+  renderSidebar();
+  renderContent();
+}
+
+function navigate(route, itemIndex, skipHistory) {
+  if (!skipHistory && (STATE.route !== route || (typeof itemIndex === 'number' && STATE.selectedIdx !== itemIndex))) {
+    pushNavSnapshot();
+  }
   STATE.route = route;
   if (typeof itemIndex === 'number') {
     STATE.selectedIdx = itemIndex;
@@ -1581,6 +1761,7 @@ function navigate(route, itemIndex) {
     STATE.mobileDetailOpen = false;
   }
   closeMobileSidebar();
+  updateBackBtn();
   renderSidebar();
   renderContent();
 }
@@ -1628,16 +1809,23 @@ function updateBookmarkUI() {
     list.innerHTML = '<div class="prose" style="color:#667585;text-align:center;padding:30px 10px;">Пока нет закладок. Нажмите ★ на любом персонаже, способности, черте или теге.</div>';
     return;
   }
-  const catNames = { characters:'Персонаж', powers:'Способность', origins:'Происхождение', occupations:'Род деят.', traits:'Черта', tags:'Тег', conditions:'Состояние', glossary:'Глоссарий' };
-  list.innerHTML = STATE.bookmarks.map((b, i) => `
-    <div class="list-row" style="border:1px solid var(--border-light);border-radius:8px;margin-bottom:8px;" onclick="closeBookmarks();navigate('${b.route}', ${b.idx})">
+  const catNames = { custom_hero:'★ Мой герой', characters:'Персонаж', powers:'Способность', origins:'Происхождение', occupations:'Род деят.', traits:'Черта', tags:'Тег', conditions:'Состояние', glossary:'Глоссарий' };
+  list.innerHTML = STATE.bookmarks.map((b, i) => {
+    const clickAction = b.route === 'custom_hero'
+      ? `closeBookmarks();openCustomHeroFromBookmark('${esc(b.heroId)}')`
+      : `closeBookmarks();navigate('${b.route}', ${b.idx})`;
+    const delAction = b.route === 'custom_hero'
+      ? `toggleCustomHeroBookmark('${esc(b.heroId)}', event)`
+      : `toggleBookmark('${b.route}', ${b.idx}, '', '', event)`;
+    return `
+    <div class="list-row" style="border:1px solid var(--border-light);border-radius:8px;margin-bottom:8px;" onclick="${clickAction}">
       <div class="list-row-main">
         <div class="list-row-title">${esc(b.title)}</div>
         <div class="list-row-sub">${catNames[b.route] || b.route}${b.sub ? ' • ' + esc(b.sub) : ''}</div>
       </div>
-      <button class="star-btn saved" onclick="toggleBookmark('${b.route}', ${b.idx}, '', '', event)" title="Удалить">✕</button>
-    </div>
-  `).join('');
+      <button class="star-btn saved" onclick="${delAction}" title="Удалить">✕</button>
+    </div>`;
+  }).join('');
 }
 function openBookmarks() {
   updateBookmarkUI();
@@ -1794,6 +1982,7 @@ function getFilteredIndices(route) {
     } else if (route === 'powers') {
       if (f.group !== 'all' && item.group !== f.group) return;
       if (f.action !== 'all' && !(item.action || '').toLowerCase().includes(f.action.toLowerCase())) return;
+      if (f.rank && f.rank !== 'all' && String(getPowerMinRank(item)) !== String(f.rank)) return;
       if (q && !(item.name + ' ' + item.en + ' ' + item.group + ' ' + item.effect + ' ' + item.prereq).toLowerCase().includes(q)) return;
     } else if (route === 'traits' || route === 'tags') {
       if (f.restricted === 'yes' && !item.restriction) return;
@@ -1806,6 +1995,17 @@ function getFilteredIndices(route) {
     }
     res.push(idx);
   });
+  if (route === 'powers' && f.sort && f.sort !== 'name') {
+    res.sort((ia, ib) => {
+      const a = DB.powers[ia], b = DB.powers[ib];
+      if (f.sort === 'rank_asc') return (getPowerMinRank(a) - getPowerMinRank(b)) || a.name.localeCompare(b.name, 'ru');
+      if (f.sort === 'rank_desc') return (getPowerMinRank(b) - getPowerMinRank(a)) || a.name.localeCompare(b.name, 'ru');
+      if (f.sort === 'group') return a.group.localeCompare(b.group, 'ru') || a.name.localeCompare(b.name, 'ru');
+      return 0;
+    });
+  } else if (route === 'powers') {
+    res.sort((ia, ib) => DB.powers[ia].name.localeCompare(DB.powers[ib].name, 'ru'));
+  }
   return res;
 }
 
@@ -1835,17 +2035,29 @@ function renderSplitCatalog(el, route) {
       </div>`;
   } else if (route === 'powers') {
     const groups = [...new Set(DB.powers.map(p => p.group))].sort();
+    const fp = STATE.filters.powers;
     extraFilters = `
+      <div class="pill-bar">
+        ${['all','1','2','3','4','5','6'].map(rk => `<button class="pill-btn ${(fp.rank||'all')===rk?'active':''}" onclick="setFilter('powers','rank','${rk}')">${rk==='all'?'Все ранги':'Р'+rk}</button>`).join('')}
+      </div>
       <div class="filter-row">
         <select class="filter-select" onchange="setFilter('powers','group',this.value)">
           <option value="all">Все группы (${groups.length})</option>
-          ${groups.map(g => `<option value="${esc(g)}" ${STATE.filters.powers.group===g?'selected':''}>${esc(g)}</option>`).join('')}
+          ${groups.map(g => `<option value="${esc(g)}" ${fp.group===g?'selected':''}>${esc(g)}</option>`).join('')}
         </select>
+        <select class="filter-select" onchange="setFilter('powers','sort',this.value)">
+          <option value="name" ${(fp.sort||'name')==='name'?'selected':''}>Сорт: А–Я</option>
+          <option value="rank_asc" ${fp.sort==='rank_asc'?'selected':''}>Сорт: Ранг 1→6</option>
+          <option value="rank_desc" ${fp.sort==='rank_desc'?'selected':''}>Сорт: Ранг 6→1</option>
+          <option value="group" ${fp.sort==='group'?'selected':''}>Сорт: По группе</option>
+        </select>
+      </div>
+      <div class="filter-row">
         <select class="filter-select" onchange="setFilter('powers','action',this.value)">
           <option value="all">Любое действие</option>
-          <option value="обычное" ${STATE.filters.powers.action==='обычное'?'selected':''}>Обычное</option>
-          <option value="реакция" ${STATE.filters.powers.action==='реакция'?'selected':''}>Реакция</option>
-          <option value="постоянная" ${STATE.filters.powers.action==='постоянная'?'selected':''}>Постоянная</option>
+          <option value="обычное" ${fp.action==='обычное'?'selected':''}>Обычное</option>
+          <option value="реакция" ${fp.action==='реакция'?'selected':''}>Реакция</option>
+          <option value="постоянная" ${fp.action==='постоянная'?'selected':''}>Постоянная</option>
         </select>
       </div>`;
   } else if (route === 'traits' || route === 'tags') {
@@ -1869,7 +2081,8 @@ function renderSplitCatalog(el, route) {
       badge = `<span class="tag-mini rank">Р${it.rank}</span>`;
     } else if (route === 'powers') {
       sub = it.group + (it.cost ? ' • ' + it.cost : '');
-      badge = `<span class="tag-mini ${it.group==='Основные'?'':'purple'}">${esc(it.action.split(' ')[0])}</span>`;
+      const mr = getPowerMinRank(it);
+      badge = `<span class="tag-mini rank">Р${mr}</span><span class="tag-mini ${it.group==='Основные'?'':'purple'}">${esc(it.action.split(' ')[0])}</span>`;
     } else if (route === 'conditions') {
       sub = it.summary;
       badge = `<span class="tag-mini ${it.severity==='critical'||it.severity==='damage'?'red':''}">стр.${it.page}</span>`;
@@ -2785,6 +2998,36 @@ function canTakePower(power, ownedNormSet, rank, maxFocus, originName, stats) {
   return true;
 }
 
+function getPowerMinRank(power) {
+  const pr = PARSED_PREREQS.get(power.name) || parsePowerPrereq(power.prereq);
+  return pr.minRank || 1;
+}
+
+function getPowerBlockReason(power, ownedNormSet, rank, maxFocus, originName, limitCount, currentCount) {
+  const pr = PARSED_PREREQS.get(power.name) || parsePowerPrereq(power.prereq);
+  if (pr.minRank > rank) return `Нужен Ранг ${pr.minRank} (сейчас Ранг ${rank})`;
+  if (originName && /специальная подготовка/i.test(originName)) {
+    const pGroups = power.group.split(',').map(x => x.trim());
+    if (!pGroups.every(g => MUNDANE_ALLOWED_GROUPS.has(g))) return 'Недоступно для «Специальная Подготовка»';
+  }
+  const cost = parseFocusCost(power.cost);
+  if (cost > 0 && cost > maxFocus) return `Нужно ${cost} Фокуса (у героя ${maxFocus})`;
+  for (const clause of pr.reqClauses) {
+    const satisfied = clause.some(alt => ownedNormSet.has(alt));
+    if (!satisfied) {
+      const niceNames = clause.map(alt => {
+        const fp = DB.powers.find(x => normName(x.name) === alt);
+        return fp ? fp.name : alt;
+      });
+      return `Сначала возьмите: ${niceNames.join(' или ')}`;
+    }
+  }
+  if (typeof limitCount === 'number' && typeof currentCount === 'number' && currentCount >= limitCount) {
+    return `Достигнут лимит способностей ранга (${currentCount}/${limitCount})`;
+  }
+  return null;
+}
+
 function chooseGroupsForHero(rank, archObj, originName) {
   const allGroups = [...new Set(DB.powers.map(p => p.group).filter(g => g !== 'Основные' && !g.includes(',')))];
   const isMundane = originName && /специальная подготовка/i.test(originName);
@@ -3089,8 +3332,44 @@ function newBlankHero() {
 function toggleBuilderPower(pwName, pwGroup) {
   const b = STATE.builder;
   const idx = b.powers.findIndex(p => p.name === pwName);
-  if (idx >= 0) b.powers.splice(idx, 1);
-  else b.powers.push({ name: pwName, group: pwGroup });
+  if (idx >= 0) {
+    b.powers.splice(idx, 1);
+    // Cascade-remove any dependent powers whose prerequisites are no longer satisfied!
+    const removedDeps = [];
+    let changed = true;
+    while (changed) {
+      changed = false;
+      const ownedNow = new Set(b.powers.map(p => normName(p.name)));
+      for (let i = b.powers.length - 1; i >= 0; i--) {
+        const full = DB.powers.find(x => x.name === b.powers[i].name);
+        if (!full) continue;
+        const pr = PARSED_PREREQS.get(full.name) || parsePowerPrereq(full.prereq);
+        const ok = pr.reqClauses.every(clause => clause.some(alt => ownedNow.has(alt)));
+        if (!ok) {
+          removedDeps.push(b.powers[i].name);
+          b.powers.splice(i, 1);
+          changed = true;
+        }
+      }
+    }
+    if (removedDeps.length) {
+      showToast(`Снято «${pwName}» и зависимые: ${removedDeps.join(', ')}`);
+    }
+  } else {
+    const full = DB.powers.find(x => x.name === pwName);
+    const rkInfo = DB.tables.rankResources[b.rank - 1];
+    const maxFocus = Math.max(10, (b.stats['Бдительность'] || 1) * 30);
+    const origName = (DB.origins[b.originIdx] && DB.origins[b.originIdx].name) || '';
+    const ownedNorm = new Set(b.powers.map(p => normName(p.name)));
+    if (full) {
+      const reason = getPowerBlockReason(full, ownedNorm, b.rank, maxFocus, origName, rkInfo.powers, b.powers.length);
+      if (reason) {
+        showToast('Нельзя добавить: ' + reason);
+        return;
+      }
+    }
+    b.powers.push({ name: pwName, group: pwGroup });
+  }
   renderContent();
 }
 function toggleBuilderTrait(trName) {
@@ -3411,11 +3690,29 @@ function renderBuilder(el) {
   else if (b.step === 'powers') {
     const pwGroups = [...new Set(DB.powers.map(p => p.group))].sort();
     const pq = (b.pwSearch || '').toLowerCase();
-    const filteredPw = DB.powers.filter(p => {
+    const bMaxFocus = Math.max(10, (b.stats['Бдительность'] || 1) * 30);
+    const bOrigName = (DB.origins[b.originIdx] && DB.origins[b.originIdx].name) || '';
+    const bOwnedNorm = new Set((b.powers || []).map(p => normName(p.name)));
+    const pwRankF = b.pwRank || 'all';
+    const pwSortF = b.pwSort || 'rank_asc';
+    const onlyAvail = !!b.pwOnlyAvail;
+
+    let filteredPw = DB.powers.filter(p => {
       if (b.pwGroup && b.pwGroup !== 'all' && p.group !== b.pwGroup) return false;
+      if (pwRankF !== 'all' && String(getPowerMinRank(p)) !== String(pwRankF)) return false;
       if (pq && !(p.name + ' ' + p.group + ' ' + p.effect).toLowerCase().includes(pq)) return false;
+      if (onlyAvail) {
+        const has = bOwnedNorm.has(normName(p.name));
+        if (!has && getPowerBlockReason(p, bOwnedNorm, b.rank, bMaxFocus, bOrigName, rkInfo.powers, (b.powers||[]).length)) return false;
+      }
       return true;
-    }).slice(0, 60);
+    });
+    filteredPw.sort((a, c) => {
+      if (pwSortF === 'rank_asc') return (getPowerMinRank(a) - getPowerMinRank(c)) || a.name.localeCompare(c.name, 'ru');
+      if (pwSortF === 'rank_desc') return (getPowerMinRank(c) - getPowerMinRank(a)) || a.name.localeCompare(c.name, 'ru');
+      return a.name.localeCompare(c.name, 'ru');
+    });
+    filteredPw = filteredPw.slice(0, 80);
     const tq = (b.trSearch || '').toLowerCase();
     const filteredTr = DB.traits.filter(t => !tq || (t.name + ' ' + t.desc).toLowerCase().includes(tq));
     const gq = (b.tgSearch || '').toLowerCase();
@@ -3431,24 +3728,36 @@ function renderBuilder(el) {
           <div class="chip-list">
             ${(b.powers||[]).length ? b.powers.map(p => `<span class="chip blue">${esc(p.name)} <button style="border:none;background:transparent;color:var(--red);font-weight:800;" onclick="toggleBuilderPower('${esc(p.name).replace(/'/g,"\\'")}','${esc(p.group).replace(/'/g,"\\'")}')">✕</button></span>`).join('') : '<span style="font-size:12px;color:#6b7785;">Пока не выбрано ни одной способности.</span>'}
           </div>
+          <div class="pill-bar" style="margin-bottom:8px;">
+            ${['all','1','2','3','4','5','6'].map(rk => `<button class="pill-btn ${pwRankF===rk?'active':''}" onclick="STATE.builder.pwRank='${rk}';renderContent();">${rk==='all'?'Все ранги':'Р'+rk}</button>`).join('')}
+            <button class="pill-btn ${onlyAvail?'active':''}" onclick="STATE.builder.pwOnlyAvail=!STATE.builder.pwOnlyAvail;renderContent();">✓ Только доступные</button>
+          </div>
           <div class="filter-row" style="margin-bottom:8px;">
             <input type="text" class="filter-input" style="flex:1;" value="${esc(b.pwSearch||'')}" placeholder="Поиск из 318 способностей..." oninput="STATE.builder.pwSearch=this.value;renderContent();">
             <select class="filter-select" onchange="STATE.builder.pwGroup=this.value;renderContent();">
               <option value="all">Все группы</option>
               ${pwGroups.map(g => `<option value="${esc(g)}" ${b.pwGroup===g?'selected':''}>${esc(g)}</option>`).join('')}
             </select>
+            <select class="filter-select" onchange="STATE.builder.pwSort=this.value;renderContent();">
+              <option value="rank_asc" ${pwSortF==='rank_asc'?'selected':''}>Ранг 1→6</option>
+              <option value="rank_desc" ${pwSortF==='rank_desc'?'selected':''}>Ранг 6→1</option>
+              <option value="name" ${pwSortF==='name'?'selected':''}>А–Я</option>
+            </select>
           </div>
           <div class="picker-list">
             ${filteredPw.map(p => {
-              const has = (b.powers||[]).some(x => x.name === p.name);
+              const has = bOwnedNorm.has(normName(p.name));
+              const mr = getPowerMinRank(p);
+              const reason = has ? null : getPowerBlockReason(p, bOwnedNorm, b.rank, bMaxFocus, bOrigName, rkInfo.powers, (b.powers||[]).length);
               return `<div class="picker-item ${has?'picked':''}">
-                <div style="min-width:0;">
-                  <div style="font-weight:700;">${esc(p.name)} <span class="tag-mini" style="margin-left:4px;">${esc(p.group)}</span></div>
+                <div style="min-width:0;cursor:pointer;" onclick="openQuickPreview('powers','${esc(p.name).replace(/'/g,"\\'")}')">
+                  <div style="font-weight:700;">${esc(p.name)} <span class="tag-mini rank" style="margin-left:4px;">Р${mr}</span> <span class="tag-mini">${esc(p.group)}</span></div>
                   <div style="font-size:11px;color:#5a6878;">Треб: ${esc(p.prereq)} • ${esc(p.action)}</div>
+                  ${reason ? `<div class="lock-reason">🔒 ${esc(reason)}</div>` : ''}
                 </div>
-                <button class="btn-sm ${has?'primary':''}" onclick="toggleBuilderPower('${esc(p.name).replace(/'/g,"\\'")}','${esc(p.group).replace(/'/g,"\\'")}')">${has?'✓ Убрать':'+ Взять'}</button>
+                <button class="btn-sm ${has?'primary':''}" ${reason?'disabled':''} onclick="toggleBuilderPower('${esc(p.name).replace(/'/g,"\\'")}','${esc(p.group).replace(/'/g,"\\'")}')">${has?'✓ Убрать':'+ Взять'}</button>
               </div>`;
-            }).join('')}
+            }).join('') || '<div style="padding:14px;font-size:12px;color:#667585;text-align:center;">Нет подходящих способностей по текущим фильтрам.</div>'}
           </div>
         </div>
 
@@ -3524,14 +3833,14 @@ function renderBuilder(el) {
         </table>
         <div class="sub-h">Стандартные действия в бою</div>
         <div class="chip-list">
-          ${DB.tables.standardActions.map(a => `<span class="chip" title="${esc(a.desc)}"><strong>${esc(a.name)}</strong> (${esc(a.type)})</span>`).join('')}
+          ${DB.tables.standardActions.map(a => `<span class="chip link" onclick="openActionPreview('${esc(a.name).replace(/'/g,"\'")}','${esc(a.type).replace(/'/g,"\'")}','${esc(a.desc).replace(/'/g,"\'")}')"><strong>${esc(a.name)}</strong> (${esc(a.type)})</span>`).join('')}
         </div>`;
     } else if (b.sheetTab === 'powers') {
       tabBody = (b.powers && b.powers.length) ? b.powers.map(p => {
         const full = DB.powers.find(x => x.name === p.name);
-        return `<div class="info-card" style="margin-bottom:10px;padding:12px 14px;">
+        return `<div class="info-card" style="margin-bottom:10px;padding:12px 14px;cursor:pointer;" onclick="openQuickPreview('powers','${esc(p.name).replace(/'/g,"\'")}')">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px;">
-            <strong>⚡ ${esc(p.name)}</strong>
+            <strong style="color:var(--blue);text-decoration:underline;">⚡ ${esc(p.name)}</strong>
             <div>
               <span class="tag-mini purple">${esc(p.group)}</span>
               ${full && full.cost ? `<span class="tag-mini red" style="margin-left:4px;">${esc(full.cost)}</span>` : ''}
@@ -3578,6 +3887,13 @@ function renderBuilder(el) {
     }
 
     bodyHtml = `
+      <div class="sticky-vitals-mobile">
+        <span>❤️ ${b.curHp}/${maxHp}</span>
+        <span>🔷 ${b.curFp}/${maxFp}</span>
+        <span>★ ${b.curKarma}</span>
+        <button class="btn-sm primary" style="height:28px;padding:0 8px;font-size:11px;" onclick="sheetRollCheck('Быстрый D616', 0, false, 0)">🎲 D616</button>
+        <button class="btn-sm" style="height:28px;padding:0 8px;font-size:11px;background:var(--yellow);color:var(--navy);border-color:var(--yellow);" onclick="openLevelUpModal()">⬆ Р${b.rank}</button>
+      </div>
       <div class="sheet-banner">
         <div style="display:flex;align-items:center;gap:14px;">
           <div class="sheet-avatar">${curArch.icon || '🦸'}</div>
@@ -3587,12 +3903,17 @@ function renderBuilder(el) {
               <span class="badge-pill" style="font-size:12px;">Ранг ${b.rank}</span>
               ${curArch.id !== 'any' ? `<span class="tag-mini purple">${esc(curArch.label)}</span>` : ''}
             </div>
-            <div style="font-size:13px;color:#d6e4f5;margin-top:2px;">${esc(orig.name)} • ${esc(occ.name)} • ${esc(b.alignment || 'Героический')}</div>
+            <div style="font-size:13px;color:#d6e4f5;margin-top:4px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+              <span style="text-decoration:underline;cursor:pointer;" onclick="openQuickPreview('origins','${esc(orig.name).replace(/'/g,"\'")}')">${esc(orig.name)}</span> •
+              <span style="text-decoration:underline;cursor:pointer;" onclick="openQuickPreview('occupations','${esc(occ.name).replace(/'/g,"\'")}')">${esc(occ.name)}</span> •
+              <span>${esc(b.alignment || 'Героический')}</span>
+            </div>
           </div>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          <button class="btn-sm" style="background:var(--yellow);color:var(--navy);border-color:var(--yellow);font-weight:800;" onclick="randomizeHero(false, true)">🎲 Новый (${rkLabel})</button>
-          <button class="btn-sm primary" onclick="saveCurrentHero()">★ Сохранить</button>
+          <button class="btn-sm" style="background:var(--yellow);color:var(--navy);border-color:var(--yellow);font-weight:800;" onclick="openLevelUpModal()">⬆ Прокачка (Р${b.rank})</button>
+          <button class="btn-sm primary" onclick="saveCurrentHero()">💾 Сохранить</button>
+          <button class="btn-sm" onclick="toggleCurrentHeroBookmark()">${isHeroBookmarked(b.id) ? '★ В избранном' : '☆ В избранное'}</button>
           <button class="btn-sm" onclick="sendBuilderToCombat()">+ В бой</button>
           <button class="btn-sm" onclick="copyBuilderSheet()">📋 Копировать</button>
         </div>
@@ -3721,6 +4042,352 @@ function copyBuilderSheet() {
   if (b.tags && b.tags.length) txt += `\nТеги: ${b.tags.join(', ')}`;
   if (b.powers && b.powers.length) txt += `\nСпособности: ${b.powers.map(p => p.name).join(', ')}`;
   copyText(txt, 'Лист персонажа скопирован');
+}
+
+
+// =========================================================================
+// 9. QUICK PREVIEW BOTTOM SHEET, CUSTOM HERO BOOKMARKS, LEVEL-UP & BACKUP
+// =========================================================================
+function isHeroBookmarked(heroId) {
+  return !!heroId && STATE.bookmarks.some(b => b.route === 'custom_hero' && b.heroId === heroId);
+}
+function toggleCurrentHeroBookmark() {
+  const b = STATE.builder;
+  if (!b.id) saveCurrentHero();
+  toggleCustomHeroBookmark(b.id);
+}
+function toggleCustomHeroBookmark(heroId, ev) {
+  if (ev) ev.stopPropagation();
+  const pos = STATE.bookmarks.findIndex(x => x.route === 'custom_hero' && x.heroId === heroId);
+  if (pos >= 0) {
+    STATE.bookmarks.splice(pos, 1);
+    showToast('Герой удалён из Избранного');
+  } else {
+    const h = STATE.savedHeroes.find(x => x.id === heroId) || STATE.builder;
+    STATE.bookmarks.unshift({ route: 'custom_hero', heroId, title: h.name || 'Мой герой', sub: 'Ранг ' + h.rank });
+    showToast('Герой «' + (h.name || 'Мой герой') + '» добавлен в Избранное ★');
+  }
+  safeSet('mmrpg_bookmarks_v2', STATE.bookmarks);
+  updateBookmarkUI();
+  renderContent();
+}
+function openCustomHeroFromBookmark(heroId) {
+  const h = STATE.savedHeroes.find(x => x.id === heroId);
+  if (!h) { showToast('Персонаж не найден в списке сохранённых'); return; }
+  loadSavedHero(heroId);
+  navigate('builder');
+}
+
+function closeQuickPreview() {
+  const el = document.getElementById('previewBackdrop');
+  if (el) el.classList.remove('open');
+}
+
+function openQuickPreview(route, nameQuery) {
+  const arr = DB[route];
+  if (!arr) return;
+  const q = normName(String(nameQuery || '').replace(/\s*\([^)]*\)/g, ''));
+  let idx = arr.findIndex(x => normName(x.name || x.term) === q);
+  if (idx < 0) idx = arr.findIndex(x => normName(x.name || x.term).includes(q) || q.includes(normName(x.name || x.term)));
+  if (idx < 0) {
+    showToast('Подробное описание для «' + nameQuery + '» не найдено');
+    return;
+  }
+  const it = arr[idx];
+  const titleEl = document.getElementById('previewTitle');
+  const bodyEl = document.getElementById('previewBody');
+  const footEl = document.getElementById('previewFoot');
+
+  if (route === 'powers') {
+    titleEl.textContent = '⚡ ' + it.name;
+    // Make prerequisite power names clickable inside the preview too!
+    const pr = PARSED_PREREQS.get(it.name) || { reqClauses: [] };
+    const prereqChips = pr.reqClauses.flat().map(n => {
+      const found = DB.powers.find(p => normName(p.name) === n);
+      return found ? `<span class="chip link" onclick="openQuickPreview('powers','${esc(found.name).replace(/'/g,"\\'")}')">⚡ ${esc(found.name)}</span>` : '';
+    }).filter(Boolean).join('');
+
+    bodyEl.innerHTML = `
+      ${it.flavor ? `<div class="flavor-quote">${esc(it.flavor)}</div>` : ''}
+      <div class="meta-grid">
+        <div class="meta-box"><div class="meta-lbl">Группа</div><div class="meta-val">${esc(it.group)}</div></div>
+        <div class="meta-box"><div class="meta-lbl">Требования</div><div class="meta-val">${esc(it.prereq)}</div></div>
+        <div class="meta-box"><div class="meta-lbl">Действие</div><div class="meta-val">${esc(it.action)}</div></div>
+        <div class="meta-box"><div class="meta-lbl">Длительность</div><div class="meta-val">${esc(it.duration)}</div></div>
+        ${it.cost ? `<div class="meta-box"><div class="meta-lbl">Стоимость</div><div class="meta-val" style="color:var(--red);">${esc(it.cost)}</div></div>` : ''}
+        ${it.range ? `<div class="meta-box"><div class="meta-lbl">Дистанция</div><div class="meta-val">${esc(it.range)}</div></div>` : ''}
+      </div>
+      ${prereqChips ? `<div class="sub-h" style="margin-top:4px;">Требуемые способности</div><div class="chip-list">${prereqChips}</div>` : ''}
+      ${it.trigger ? `<div class="callout"><strong>Триггер:</strong> ${esc(it.trigger)}</div>` : ''}
+      <div class="sub-h">Эффект</div>
+      <p class="prose">${esc(it.effect)}</p>`;
+  } else if (route === 'traits' || route === 'tags') {
+    titleEl.textContent = (route === 'traits' ? '★ ' : '🏷️ ') + it.name;
+    bodyEl.innerHTML = `
+      <div style="font-size:12px;color:#5a6978;margin-bottom:10px;">${esc(it.en)} • стр. ${it.page}</div>
+      <p class="prose">${esc(it.desc)}</p>
+      ${it.restriction ? `<div class="callout warn"><strong>Ограничение:</strong> ${esc(it.restriction)}</div>` : ''}`;
+  } else if (route === 'origins') {
+    titleEl.textContent = '🧬 ' + it.name;
+    bodyEl.innerHTML = `
+      <p class="prose">${esc(it.desc)}</p>
+      <div class="meta-grid">
+        ${it.traits ? `<div class="meta-box"><div class="meta-lbl">Черты</div><div class="meta-val">${esc(it.traits)}</div></div>` : ''}
+        ${it.tags ? `<div class="meta-box"><div class="meta-lbl">Теги</div><div class="meta-val">${esc(it.tags)}</div></div>` : ''}
+        ${it.powers ? `<div class="meta-box"><div class="meta-lbl">Способности</div><div class="meta-val">${esc(it.powers)}</div></div>` : ''}
+      </div>
+      ${it.restriction ? `<div class="callout warn"><strong>Ограничение:</strong> ${esc(it.restriction)}</div>` : ''}
+      ${it.examples ? `<div class="callout"><strong>Примеры:</strong> ${esc(it.examples)}</div>` : ''}`;
+  } else if (route === 'occupations') {
+    titleEl.textContent = '💼 ' + it.name;
+    bodyEl.innerHTML = `
+      <p class="prose">${esc(it.desc)}</p>
+      <div class="meta-grid">
+        <div class="meta-box"><div class="meta-lbl">Бесплатные Черты</div><div class="meta-val">${esc(it.traits || '—')}</div></div>
+        <div class="meta-box"><div class="meta-lbl">Бесплатные Теги</div><div class="meta-val">${esc(it.tags || '—')}</div></div>
+      </div>
+      ${it.examples ? `<div class="callout"><strong>Примеры:</strong> ${esc(it.examples)}</div>` : ''}`;
+  } else if (route === 'conditions') {
+    titleEl.textContent = '🔥 ' + it.name;
+    bodyEl.innerHTML = `
+      <div class="callout warn"><strong>Кратко:</strong> ${esc(it.summary)}</div>
+      <p class="prose">${esc(it.desc)}</p>`;
+  }
+
+  footEl.innerHTML = `
+    <button class="btn-sm" onclick="closeQuickPreview();navigate('${route}', ${idx})">Открыть в справочнике →</button>
+    <button class="btn-sm primary" onclick="closeQuickPreview()">Готово (вернуться к листу)</button>`;
+  document.getElementById('previewBackdrop').classList.add('open');
+}
+
+function openActionPreview(actionName, actionType, actionDesc) {
+  document.getElementById('previewTitle').textContent = '⚔️ ' + actionName + ' (' + actionType + ')';
+  document.getElementById('previewBody').innerHTML = `<p class="prose">${esc(actionDesc)}</p>`;
+  document.getElementById('previewFoot').innerHTML = `
+    <button class="btn-sm" onclick="closeQuickPreview();navigate('rules')">Все правила и таблицы →</button>
+    <button class="btn-sm primary" onclick="closeQuickPreview()">Закрыть</button>`;
+  document.getElementById('previewBackdrop').classList.add('open');
+}
+
+// =========================================================================
+// LEVEL UP MODAL (1 -> 6 WITHOUT LOSING EXISTING BUILD!)
+// =========================================================================
+function openLevelUpModal() {
+  const b = STATE.builder;
+  const rkInfo = DB.tables.rankResources[b.rank - 1];
+  const statNames = ['Сила','Ловкость','Выносливость','Бдительность','Эго','Логика'];
+  const spent = statNames.reduce((acc, s) => acc + (b.stats[s] || 0), 0);
+  const remainPts = rkInfo.abilityPts - spent;
+  const remainPw = rkInfo.powers - (b.powers || []).length;
+  const remainTr = rkInfo.traits - (b.traits || []).length;
+  const maxFocus = Math.max(10, (b.stats['Бдительность'] || 1) * 30);
+  const origName = (DB.origins[b.originIdx] && DB.origins[b.originIdx].name) || '';
+  const ownedNorm = new Set((b.powers || []).map(p => normName(p.name)));
+
+  // Eligible new powers matching current prerequisites & new rank!
+  const eligibleNew = DB.powers.filter(p => !ownedNorm.has(normName(p.name)) && canTakePower(p, ownedNorm, b.rank, maxFocus, origName, b.stats));
+  const pq = (b.lvlPwSearch || '').toLowerCase();
+  const shownPw = eligibleNew.filter(p => !pq || (p.name + ' ' + p.group).toLowerCase().includes(pq)).slice(0, 35);
+
+  document.getElementById('previewTitle').textContent = `⬆ Прокачка героя: ${b.name} (Ранг ${b.rank})`;
+  document.getElementById('previewBody').innerHTML = `
+    <div class="callout" style="margin-top:0;">
+      <strong>Изменить Ранг (без сброса героя):</strong>
+      <div class="pill-bar" style="margin-top:8px;">
+        ${[1,2,3,4,5,6].map(r => `<button class="pill-btn ${b.rank===r?'active':''}" onclick="setHeroRankLive(${r})">Ранг ${r}</button>`).join('')}
+      </div>
+      <div style="font-size:12px;margin-top:8px;">
+        Бюджет Ранга ${b.rank}: Очки <strong>${spent}/${rkInfo.abilityPts}</strong> (потолок ${rkInfo.cap}) • Способности <strong>${(b.powers||[]).length}/${rkInfo.powers}</strong> • Черты <strong>${(b.traits||[]).length}/${rkInfo.traits}</strong> • Карма <strong>${rkInfo.karma}</strong>
+      </div>
+    </div>
+
+    <div class="sub-h">1. Дораспределить характеристики (осталось: ${remainPts})</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:6px;margin-bottom:12px;">
+      ${statNames.map(sn => `
+        <div class="meta-box" style="display:flex;justify-content:space-between;align-items:center;">
+          <div><div class="meta-lbl">${sn}</div><div class="meta-val">${b.stats[sn]}</div></div>
+          <div style="display:flex;gap:4px;">
+            <button class="btn-sm" onclick="stepRankStat('${sn}',-1)">−</button>
+            <button class="btn-sm" onclick="stepRankStat('${sn}',1)">+</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="sub-h">2. Добрать новые способности (свободно слотов: ${remainPw} • доступно по требованиям: ${eligibleNew.length})</div>
+    <input type="text" class="filter-input" style="margin-bottom:8px;" value="${esc(b.lvlPwSearch||'')}" placeholder="Поиск доступной способности..." oninput="STATE.builder.lvlPwSearch=this.value;openLevelUpModal();">
+    <div class="picker-list" style="max-height:200px;margin-bottom:10px;">
+      ${shownPw.map(p => `
+        <div class="picker-item">
+          <div><strong>⚡ ${esc(p.name)}</strong> <span class="tag-mini">${esc(p.group)}</span><div style="font-size:11px;color:#5a6878;">Треб: ${esc(p.prereq)}</div></div>
+          <button class="btn-sm primary" onclick="addPowerInLevelUp('${esc(p.name).replace(/'/g,"\\'")}','${esc(p.group).replace(/'/g,"\\'")}')">+ Взять</button>
+        </div>
+      `).join('') || '<div style="padding:12px;font-size:12px;color:#667585;">Нет подходящих способностей по поиску.</div>'}
+    </div>
+    <div style="font-size:12px;color:#5a6878;">Свободных черт на Ранге ${b.rank}: <strong>${remainTr}</strong> — добрать их можно на шаге «4. Способности».</div>
+  `;
+  document.getElementById('previewFoot').innerHTML = `
+    <button class="btn-sm" onclick="closeQuickPreview();setBuilderStep('powers')">Открыть все способности и черты</button>
+    <button class="btn-sm primary" onclick="saveCurrentHero();closeQuickPreview();renderContent();">✓ Сохранить прокачку</button>`;
+  document.getElementById('previewBackdrop').classList.add('open');
+}
+
+function setHeroRankLive(newRank) {
+  const b = STATE.builder;
+  b.rank = newRank;
+  b.curKarma = newRank;
+  if (b.genOpts) b.genOpts.rank = String(newRank);
+  showToast(`Ранг персонажа изменён на ${newRank} — можно добрать очки и способности!`);
+  openLevelUpModal();
+  renderContent();
+}
+function stepRankStat(sn, d) {
+  const b = STATE.builder;
+  const cap = DB.tables.rankResources[b.rank - 1].cap;
+  const nv = b.stats[sn] + d;
+  if (nv < -3 || nv > cap) return;
+  b.stats[sn] = nv;
+  syncHeroVitals();
+  openLevelUpModal();
+  renderContent();
+}
+function addPowerInLevelUp(name, group) {
+  const b = STATE.builder;
+  const rkInfo = DB.tables.rankResources[b.rank - 1];
+  const maxFocus = Math.max(10, (b.stats['Бдительность'] || 1) * 30);
+  const origName = (DB.origins[b.originIdx] && DB.origins[b.originIdx].name) || '';
+  const ownedNorm = new Set((b.powers || []).map(p => normName(p.name)));
+  const full = DB.powers.find(x => x.name === name);
+  if (full) {
+    const reason = getPowerBlockReason(full, ownedNorm, b.rank, maxFocus, origName, rkInfo.powers, b.powers.length);
+    if (reason) { showToast('Нельзя добавить: ' + reason); return; }
+  }
+  b.powers.push({ name, group });
+  showToast('Добавлена способность: ' + name);
+  openLevelUpModal();
+  renderContent();
+}
+
+// =========================================================================
+// ACCOUNT & BACKUP MODAL (JSON EXPORT/IMPORT + SYNC CODE + CLOUD CONFIG)
+// =========================================================================
+const FIREBASE_CONFIG = null; // Вставьте объект конфигурации Firebase для облачной синхронизации
+
+function openAccountModal() {
+  const profileName = safeGet('mmrpg_user_profile_v1', { name: 'Игрок D616' }).name;
+  document.getElementById('previewTitle').textContent = '👤 Профиль и Сохранение персонажей';
+  document.getElementById('previewBody').innerHTML = `
+    <div class="field" style="margin-bottom:12px;">
+      <label>Имя игрока (локальный профиль)</label>
+      <div style="display:flex;gap:6px;">
+        <input type="text" id="profNameInput" value="${esc(profileName)}" placeholder="Ваше имя или ник">
+        <button class="btn-sm primary" onclick="saveLocalProfile()">Сохранить</button>
+      </div>
+    </div>
+
+    <div class="meta-grid">
+      <div class="meta-box"><div class="meta-lbl">Мои персонажи</div><div class="meta-val">${STATE.savedHeroes.length}</div></div>
+      <div class="meta-box"><div class="meta-lbl">В Избранном</div><div class="meta-val">${STATE.bookmarks.length}</div></div>
+      <div class="meta-box"><div class="meta-lbl">В Трекере боя</div><div class="meta-val">${STATE.combat.list.length}</div></div>
+    </div>
+
+    <div class="sub-h">Резервная копия и перенос на другой телефон / ПК</div>
+    <p class="prose" style="font-size:13px;">Все герои автоматически сохраняются в браузере. Чтобы перенести их на другой телефон или не потерять при очистке кэша, скачайте файл резервной копии или скопируйте код переноса:</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+      <button class="btn-sm primary" onclick="exportAllBackupJson()">⬇ Скачать бэкап (.json)</button>
+      <button class="btn-sm blue" onclick="document.getElementById('importJsonInput').click()">⬆ Загрузить бэкап (.json)</button>
+      <button class="btn-sm" onclick="copySyncCode()">📋 Копировать код переноса</button>
+    </div>
+
+    <div class="field" style="margin-bottom:12px;">
+      <label>Вставить код переноса с другого устройства</label>
+      <div style="display:flex;gap:6px;">
+        <input type="text" id="syncCodeInput" placeholder="Вставьте сюда скопированный код...">
+        <button class="btn-sm" onclick="applySyncCode()">Восстановить</button>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-bottom:0;font-size:12px;">
+      <strong>Облачный аккаунт (Firebase):</strong> ${FIREBASE_CONFIG ? 'Подключён' : 'Не настроен (работает локальное сохранение + бэкап JSON). Чтобы включить вход по Email/Google между устройствами на GitHub Pages, создайте бесплатный проект в Firebase и вставьте конфиг в константу <code>FIREBASE_CONFIG</code>.'}
+    </div>
+  `;
+  document.getElementById('previewFoot').innerHTML = `
+    <span style="font-size:11.5px;color:#5a6978;">Автосохранение активно</span>
+    <button class="btn-sm primary" onclick="closeQuickPreview()">Готово</button>`;
+  document.getElementById('previewBackdrop').classList.add('open');
+}
+
+function saveLocalProfile() {
+  const v = (document.getElementById('profNameInput')?.value || '').trim() || 'Игрок D616';
+  safeSet('mmrpg_user_profile_v1', { name: v });
+  showToast('Профиль «' + v + '» сохранён');
+}
+function buildBackupPayload() {
+  return {
+    version: 2,
+    exportedAt: new Date().toISOString(),
+    savedHeroes: STATE.savedHeroes,
+    bookmarks: STATE.bookmarks,
+    combat: STATE.combat
+  };
+}
+function exportAllBackupJson() {
+  const blob = new Blob([JSON.stringify(buildBackupPayload(), null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'marvel_rpg_backup.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('Файл резервной копии скачан');
+}
+function handleImportJsonFile(ev) {
+  const file = ev.target.files && ev.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      applyBackupData(data);
+    } catch (e) {
+      showToast('Ошибка чтения файла резервной копии');
+    }
+    ev.target.value = '';
+  };
+  reader.readAsText(file);
+}
+function copySyncCode() {
+  const jsonStr = JSON.stringify(buildBackupPayload());
+  const b64 = btoa(unescape(encodeURIComponent(jsonStr)));
+  copyText(b64, 'Код переноса скопирован — отправьте его себе на другой телефон');
+}
+function applySyncCode() {
+  const raw = (document.getElementById('syncCodeInput')?.value || '').trim();
+  if (!raw) { showToast('Вставьте код переноса'); return; }
+  try {
+    const jsonStr = decodeURIComponent(escape(atob(raw)));
+    applyBackupData(JSON.parse(jsonStr));
+  } catch (e) {
+    showToast('Некорректный код переноса');
+  }
+}
+function applyBackupData(data) {
+  if (!data || typeof data !== 'object') { showToast('Неверный формат данных'); return; }
+  if (Array.isArray(data.savedHeroes)) {
+    STATE.savedHeroes = data.savedHeroes;
+    safeSet('mmrpg_saved_heroes_v1', STATE.savedHeroes);
+  }
+  if (Array.isArray(data.bookmarks)) {
+    STATE.bookmarks = data.bookmarks;
+    safeSet('mmrpg_bookmarks_v2', STATE.bookmarks);
+    updateBookmarkUI();
+  }
+  if (data.combat && Array.isArray(data.combat.list)) {
+    STATE.combat = data.combat;
+    safeSet('mmrpg_combat_v2', STATE.combat);
+  }
+  showToast(`Восстановлено героев: ${STATE.savedHeroes.length}, закладок: ${STATE.bookmarks.length}`);
+  openAccountModal();
+  renderContent();
 }
 
 // =========================================================================
